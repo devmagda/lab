@@ -95,7 +95,7 @@ class LCD1602:
 
 if __name__ == "__main__":
     try:
-        lcd = LCD1602(rs=4, e=6, d4=17, d5=18, d6=27, d7=22, width=16, rows=2)
+        lcd = LCD1602(rs=12, e=11, d4=10, d5=8, d6=7, d7=5, width=16, rows=2)
         lcd.setup_gpio()
         lcd.initialize_lcd()
         lcd.display_text("Hello, World!", line=1)
