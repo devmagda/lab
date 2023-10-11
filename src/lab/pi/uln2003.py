@@ -30,7 +30,7 @@ class ULN2003():
                              [0, 0, 1, 1],
                              [1, 0, 0, 1]]
 
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         for p in range(len(self.pins)):
             GPIO.setup(self.pins[p], GPIO.OUT)
