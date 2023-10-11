@@ -4,7 +4,7 @@ import RPi.GPIO as GPIO
 
 
 class ULN2003():
-    GPIO.setmode(GPIO.BCM)
+    GPIO.setmode(GPIO.BOARD)
     GPIO.setwarnings(False)
 
     # defining how long to wait between steps:
