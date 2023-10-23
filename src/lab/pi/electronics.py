@@ -2,10 +2,6 @@ import time
 
 import RPi.GPIO as GPIO
 
-# ---------- Settings ----------------------------------------------------------------------
-
-
-
 # ---------- Initialisation Phase ----------------------------------------------------------
 try:
     GPIO.setmode(GPIO.BOARD)
@@ -16,18 +12,18 @@ GPIO.setwarnings(False)
 
 
 # ---------- Raspberry Pi Pins -------------------------------------------------------------
-
 class Pin:
     def __init__(self, pin, mode):
         self.pin = pin
         self.mode = mode
-        GPIO.output(pin, mode)
+        GPIO.setup(pin, mode)
 
 
 class Out(Pin):
-    clockPulseLen = .00001
+    clockPulseLen = .01
+
     def __init__(self, pin):
-        super.__init__(pin, GPIO.OUT)
+        super().__init__(pin, GPIO.OUT)
 
     def high(self):
         GPIO.output(self.pin, GPIO.HIGH)
@@ -42,22 +38,96 @@ class Out(Pin):
         time.sleep(Out.clockPulseLen)
 
 
+class PWM(Out):
+    def __init__(self, pin, pulse_width=100):
+        super().__init__(pin)
+        self.pwm = GPIO.PWM(pin, pulse_width)
+        self.pwm.start(0)
 
-# ---------- Shift Register ----------------------------------------------------------------
-class ShiftRegister:
+    def set_power(self, percentage=0):
+        self.pwm.ChangeDutyCycle(percentage)
 
-    def __init__(self, clock=38, data=40, latch=36):
+
+# ---------- Controllers ----------------------------------------------------------------
+class Controller:
+    pass
+
+
+class ShiftRegister(Controller):
+
+    def __init__(self, clock=38, data=36, latch=40):
         self.clock = Out(clock)
         self.data = Out(data)
         self.latch = Out(latch)
+        self.registers = [False, False, False, False, False, False, False, False]
 
-    def set(self, registers='00000000'):
-        for register in registers:
-            if register == '0':
-                self.data.low()
-            else:
+    def set(self, registers=None):
+        if registers is not None:
+            self.registers = registers
+
+        for register in self.registers[::-1]:
+            if register:
                 self.data.high()
+            else:
+                self.data.low()
             self.clock.tick()
+
+    def set_index(self, index, value: bool):
+        self.registers[index] = value
+        self.set()
+
+
+class L293D(Controller):
+    class __Motor:
+        def __init__(self, forward_pin, backward_pin, speed_pin):
+            self.forward = Out(forward_pin)
+            self.backward = Out(backward_pin)
+            self.speed = PWM(speed_pin)
+
+        def stop(self):
+            self.forward.low()
+            self.backward.low()
+            self.speed.set_power(percentage=0)
+
+        def set_speed(self, speed):
+            if speed > 100 or speed < 0:
+                raise ValueError(f'Speed is out of range ({speed})')
+            self.stop()
+            if speed > 0:
+                self.forward.high()
+            if speed < 0:
+                self.backward.high()
+            self.speed.set_power(percentage=speed)
+
+    def __init__(self, in1: int, in2: int, in3: int, in4: int, vcc1: int, vcc2: int):
+        self.motor1 = L293D.__Motor(in1, in2, vcc1)
+        self.motor2 = L293D.__Motor(in3, in4, vcc2)
+
+    def reset(self):
+        self.motor1.stop()
+        self.motor2.stop()
+
+
+class TrackController(L293D):
+    def __init__(self, in1: int, in2: int, in3: int, in4: int, vcc1: int, vcc2: int):
+        super().__init__(self, in1, in2, in3, in4, vcc1, vcc2)
+
+    def forward(self, speed: float):
+        self.motor1.set_speed(speed)
+        self.motor2.set_speed(speed)
+
+    def backward(self, speed: float):
+        self.forward(-speed)
+
+    def rotate_left(self, speed: float):
+        self.motor1.set_speed(speed)
+        self.motor2.set_speed(-speed)
+
+    def rotate_right(self, speed: float):
+        self.rotate_left(-speed)
+
+    def stop(self):
+        self.reset()
 
 
 # ---------- Stepper Motor -----------------------------------------------------------------
