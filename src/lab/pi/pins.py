@@ -1,0 +1,13 @@
+L_VCC = 1
+L_DS = 32
+L_SH_CP = 33
+L_ST_CP = 31
+
+E_VCC1 = 2
+E_IN4 = 37
+E_IN3 = 35
+E_EN_34 = 40
+E_EN_12 = 8
+E_IN1 = 38
+E_IN2 = 36
+E_VCC2 = 4
