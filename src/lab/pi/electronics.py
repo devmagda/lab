@@ -55,11 +55,16 @@ class Controller:
 
 class ShiftRegister(Controller):
 
-    def __init__(self, clock=38, data=36, latch=40):
+    def __init__(self, clock, data, latch):
         self.clock = Out(clock)
         self.data = Out(data)
         self.latch = Out(latch)
         self.registers = [False, False, False, False, False, False, False, False]
+
+    @staticmethod
+    def from_config():
+        import pins
+        return ShiftRegister(clock=pins.L_SH_CP, data=pins.L_DS, latch=pins.L_ST_CP)
 
     def set(self, registers=None):
         if registers is not None:
@@ -77,6 +82,33 @@ class ShiftRegister(Controller):
         self.set()
 
 
+class LightSystem(ShiftRegister):
+    I_LIGHTS = 0
+    I_BREAKS = 1
+    I_LEFT = 2
+    I_RIGHT = 3
+
+    def __init__(self, clock, data, latch):
+        super.__init__(clock, data, latch)
+
+    def set_lights(self, on):
+        self.set_index(LightSystem.I_LIGHTS, on)
+
+    def set_breaks(self, on):
+        self.set_index(LightSystem.I_BREAKS, on)
+
+    def set_left(self, on):
+        self.set_index(LightSystem.I_LEFT, on)
+
+    def set_right(self, on):
+        self.set_index(LightSystem.I_RIGHT, on)
+
+    @staticmethod
+    def from_config():
+        import pins
+        return LightSystem(clock=pins.L_SH_CP, data=pins.L_DS, latch=pins.L_ST_CP)
+
+
 class L293D(Controller):
     class __Motor:
         def __init__(self, forward_pin, backward_pin, speed_pin):
@@ -90,14 +122,21 @@ class L293D(Controller):
             self.speed.set_power(percentage=0)
 
         def set_speed(self, speed):
-            if speed > 100 or speed < 0:
+            if speed > 100 or speed < -100:
                 raise ValueError(f'Speed is out of range ({speed})')
             self.stop()
             if speed > 0:
                 self.forward.high()
+                self.speed.set_power(percentage=speed)
             if speed < 0:
                 self.backward.high()
-            self.speed.set_power(percentage=speed)
+                self.speed.set_power(percentage=-speed)
+
+    @staticmethod
+    def from_config():
+        def from_config():
+            import pins
+            return L293D(pins.E_IN1, pins.E_IN2, pins.E_IN3, pins.E_IN4, pins.E_EN_12, pins.E_EN_34)
 
     def __init__(self, in1: int, in2: int, in3: int, in4: int, vcc1: int, vcc2: int):
         self.motor1 = L293D.__Motor(in1, in2, vcc1)
@@ -107,10 +146,26 @@ class L293D(Controller):
         self.motor1.stop()
         self.motor2.stop()
 
+    def forward(self, speed):
+        self.motor1.set_speed(speed)
+        self.motor2.set_speed(speed)
+
+    def rotate_right(self, speed):
+        self.motor1.set_speed(speed)
+        self.motor2.set_speed(-speed)
+
+    def rotate_left(self, speed):
+        self.rotate_right(-speed)
+
 
 class TrackController(L293D):
+    @staticmethod
+    def from_config():
+        import pins
+        return TrackController(pins.E_IN1, pins.E_IN2, pins.E_IN3, pins.E_IN4, pins.E_EN_12, pins.E_EN_34)
+
     def __init__(self, in1: int, in2: int, in3: int, in4: int, vcc1: int, vcc2: int):
-        super().__init__(self, in1, in2, in3, in4, vcc1, vcc2)
+        super().__init__(in1, in2, in3, in4, vcc1, vcc2)
 
     def forward(self, speed: float):
         self.motor1.set_speed(speed)
@@ -119,12 +174,12 @@ class TrackController(L293D):
     def backward(self, speed: float):
         self.forward(-speed)
 
-    def rotate_left(self, speed: float):
+    def rotate_right(self, speed: float):
         self.motor1.set_speed(speed)
         self.motor2.set_speed(-speed)
 
-    def rotate_right(self, speed: float):
-        self.rotate_left(-speed)
+    def rotate_left(self, speed: float):
+        self.rotate_right(-speed)
 
     def stop(self):
         self.reset()
