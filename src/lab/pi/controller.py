@@ -1,30 +1,47 @@
 from sshkeyboard import listen_keyboard
 from electronics import TrackController
 
-global n
+global n, speed
 
 tc = TrackController.from_config()
+speed = 50
 
 
 def on_key_press(key):
-    global n
+    global n, speed
     n = 0
     if key == 'w':
         tc.forward(100)
         n += 1
-        print('Forward')
+        print('100 Forward')
     elif key == 'a':
         tc.rotate_left(100)
         n += 1
-        print('Rotate left')
+        print('100 Rotate left')
     elif key == 's':
         tc.backward(100)
         n += 1
-        print('Backward')
+        print('100 Backward')
     elif key == 'd':
         tc.rotate_right(100)
         n += 1
-        print('Rotate right')
+        print('100 Rotate right')
+    elif key == 'i':
+        tc.forward(50)
+        n += 1
+        print('100 Forward')
+    elif key == 'j':
+        tc.rotate_left(50)
+        n += 1
+        print('100 Rotate left')
+    elif key == 'k':
+        tc.backward(50)
+        n += 1
+        print('100 Backward')
+    elif key == 'l':
+        tc.rotate_right(50)
+        n += 1
+        print('100 Rotate right')
     elif key == 'p':
         quit(0)
     else:
