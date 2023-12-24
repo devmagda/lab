@@ -1,4 +1,7 @@
 import time
+from venv import logger
+
+from flask import logging
 
 import RPi.GPIO as GPIO
 
@@ -168,21 +171,62 @@ class TrackController(L293D):
         super().__init__(in1, in2, in3, in4, vcc1, vcc2)
 
     def forward(self, speed: float):
-        self.motor1.set_speed(speed)
-        self.motor2.set_speed(speed)
+        self.steer(speed, speed)
 
     def backward(self, speed: float):
-        self.forward(-speed)
+        self.steer(-speed, -speed)
 
     def rotate_right(self, speed: float):
-        self.motor1.set_speed(speed)
-        self.motor2.set_speed(-speed)
+        self.steer(speed, -speed)
 
     def rotate_left(self, speed: float):
         self.rotate_right(-speed)
 
     def stop(self):
         self.reset()
+
+    def steer(self, left: float, right: float):
+        logger.info("steering")
+        self.motor1.set_speed(left)
+        self.motor2.set_speed(right)
+
+    def directions(self, x, y, direction):
+        turn = 75
+        speed = 100
+
+        # limit speed to 100
+        if x > 100:
+            x = 100
+
+        if y > 100:
+            y = 100
+
+        if x < -100:
+            x = -100
+
+        if y < -100:
+            y = -100
+
+        if direction == 'C':
+            self.reset()
+        elif direction == 'N':
+            self.forward(speed)
+        elif direction == 'NE':
+            self.steer(speed, turn)
+        elif direction == 'E':
+            self.rotate_right(speed)
+        elif direction == 'SE':
+            self.steer(-speed, -turn)
+        elif direction == 'S':
+            self.forward(speed)
+        elif direction == 'SW':
+            self.steer(-turn, -speed)
+        elif direction == 'W':
+            self.rotate_left(-speed)
+        elif direction == 'NW':
+            self.steer(turn, speed)
+        else:
+            raise ValueError(f'Direction {direction} is not a valid direction')
 
 
 # ---------- Stepper Motor -----------------------------------------------------------------
