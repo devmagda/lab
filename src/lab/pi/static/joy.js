@@ -45,13 +45,33 @@
  * SOFTWARE.
  */
 
-let StickStatus =
-{
+let StickStatus = {
     xPosition: 0,
     yPosition: 0,
     x: 0,
     y: 0,
-    cardinalDirection: "C"
+    cardinalDirection: "C",
+    actuate: function() {
+        fetch('/tank/steering', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Add any other headers if needed
+                },
+                body: JSON.stringify({
+            x: this.x,
+            y: this.y,
+            direction: this.cardinalDirection
+        }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response:', data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+    }
 };
 
 /**
@@ -211,6 +231,7 @@ var JoyStick = (function(container, parameters, callback)
             StickStatus.x = (100*((movedX - centerX)/maxMoveStick)).toFixed();
             StickStatus.y = ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
             StickStatus.cardinalDirection = getCardinalDirection();
+            StickStatus.actuate();
             callback(StickStatus);
         }
     }
@@ -238,6 +259,7 @@ var JoyStick = (function(container, parameters, callback)
         StickStatus.x = (100*((movedX - centerX)/maxMoveStick)).toFixed();
         StickStatus.y = ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
         StickStatus.cardinalDirection = getCardinalDirection();
+        StickStatus.actuate();
         callback(StickStatus);
     }
 
@@ -279,6 +301,7 @@ var JoyStick = (function(container, parameters, callback)
             StickStatus.x = (100*((movedX - centerX)/maxMoveStick)).toFixed();
             StickStatus.y = ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
             StickStatus.cardinalDirection = getCardinalDirection();
+            StickStatus.actuate();
             callback(StickStatus);
         }
     }
@@ -304,6 +327,7 @@ var JoyStick = (function(container, parameters, callback)
         StickStatus.x = (100*((movedX - centerX)/maxMoveStick)).toFixed();
         StickStatus.y = ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
         StickStatus.cardinalDirection = getCardinalDirection();
+        StickStatus.actuate();
         callback(StickStatus);
     }
 
